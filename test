@@ -1,0 +1,191 @@
+myGrid fileProcess() {
+    string myfile; 
+
+    //request for user input here
+    cout << "Please enter your file: ";
+    cin >> myfile; //cin name of file
+
+    cout << endl;
+
+    //process files
+    ifstream in_data; 
+
+    fstream input_file(myfile.c_str(), fstream::in); 
+
+    string myLine; 
+
+    while (getline(input_file, myLine)) {
+        //get range of x if "GridX_IdxRange" found
+        if (myLine.find("GridX_IdxRange") != string::npos) {
+            //get range of no. in to string
+            string numberRangeSTR = myLine.erase(0, 15); 
+
+            //get individual no. into vector string
+            vector<string> individualNum = tokenizeMethod(numberRangeSTR, "-");
+
+            //initialise
+            myMap.myintX = atoi(individualNum.at(1).c_str());
+
+            cout << "Reading " << myLine << ", Complete!" << endl; 
+            individualNum.clear();
+        }
+
+        //get range of y if "GridY_IdxRange" found
+        if (myLine.find("GridY_IdxRange") != string::npos) {
+            //get range of no. in to strin
+            string numberRangeSTR = myLine.erase(0, 15); 
+
+            //get individual no. into vector string
+            vector<string> individualNum = tokenizeMethod(numberRangeSTR, "-");
+
+            //initialise
+            myMap.myintY = atoi(individualNum.at(1).c_str());
+
+            cout << "Reading in " << myLine << ", Complete!" << endl;
+            individualNum.clear();
+        }
+        if (myMap.myintX != 0 && myMap.myintY != 0)
+            break;
+    }
+
+    cout << endl;
+
+    //allocating array memmory
+    mg = new myGrid * [myMap.myintX + 1];
+    for (int k = 0; k < myMap.myintY + 1; k++)
+        mg[k] = new myGrid[myMap.myintY + 1];
+
+    //insert x and y value in array
+    for (int arrayX = 0; arrayX < myMap.myintX + 1; arrayX++) {
+        for (int arrayY = 0; arrayY < myMap.myintY + 1; arrayY++) {
+            mg[arrayX][arrayY].x = arrayX;
+            mg[arrayX][arrayY].y = arrayY;
+        }
+    }
+
+    //for deciding which file method to use
+    int k = 0; 
+
+    cout << "Storing data from the input file:" << endl;
+
+    //process files
+    while (getline(input_file, myLine)) {
+        size_t pos = myLine.find(".txt"); 
+
+        if (pos != string::npos) {//city locations into array
+            if (k == 0) {               
+                **
+                mg = fileRead(myLine);
+                cout << myLine << ", done!" << endl;
+            } else if (k == 1) {//cloud details into array                
+                **
+                mg = fileRead(myLine);
+                cout << myLine << ", done!" << endl;
+            } else if (k == 2) {//pressure details into array               
+                **
+                mg = pressurefileRead(myLine);
+                cout << myLine << ", done!" << endl;
+            }
+            k++;
+        }
+    }
+    cout << endl;
+
+    cout << "All records successfully stored. Going back to main menu." << endl; //cout message
+
+    cout << endl;
+
+    return **mg;
+}
+
+//seperates strings to 2 based on delimiter
+vector<string> tokenizeMethod(string input, string myDelimiter) { 
+    size_t pos = 0;
+    string myToken;
+    vector<string> myResult;
+
+    while ((pos = input.find(myDelimiter)) != string::npos) {
+        myToken = input.substr(0, pos);
+        myResult.push_back(myToken); //adds element
+        input.erase(0, pos + myDelimiter.length());
+    }
+    myResult.push_back(input);
+
+    return (myResult);
+}
+
+myGrid fileRead(string myfile) {//reading files
+    fstream input_file(myfile.c_str(), fstream::in); 
+
+    string myLine;
+    string nextLine; 
+
+    while (getline(input_file, myLine)) {
+        if (myLine == "")
+            break;
+
+        myLine.erase(0, 1); 
+
+        //get value of gridX
+        vector<string> valueone = tokenizeMethod(myLine, ", "); 
+
+        int gridX = atoi(valueone.at(0).c_str()); 
+
+        nextLine = valueone[1];
+
+        //get value of gridY
+        vector<string> valuetwo = tokenizeMethod(nextLine, "]"); 
+
+        int gridY = atoi(valuetwo.at(0).c_str()); 
+
+        nextLine = valuetwo[1];
+        nextLine = nextLine.erase(0, 1); 
+
+        if (nextLine.size() == 2) {
+            //get mycloud value
+            int myCloud = stoi(nextLine);
+
+            //get cloudIndex
+            nextLine = nextLine.substr(0, 1); //get first digit
+            int cloudIndex = stoi(nextLine);
+
+            //get cloudLMH
+            char cloudLMH = getChar(myCloud);
+
+            //put value into array
+            mg[gridX][gridY].myCloud = myCloud;
+            mg[gridX][gridY].cloudIndex = cloudIndex;
+            mg[gridX][gridY].cloudLMH = cloudLMH;
+        } else if (nextLine.size() == 1) {
+            //get myCloud value
+            int myCloud = stoi(nextLine);
+
+            //get cloudIndex
+            int cloudIndex = 0;
+
+            //get cloudLMH
+            char cloudLMH = getChar(myCloud);
+
+            //put value into array
+            mg[gridX][gridY].myCloud = myCloud;
+            mg[gridX][gridY].cloudIndex = cloudIndex;
+            mg[gridX][gridY].cloudLMH = cloudLMH;
+        } else {
+            vector<string> valuethree = tokenizeMethod(nextLine, "-"); 
+
+            //get mycityID
+            int mycityID = atoi(valuethree.at(0).c_str());
+
+            nextLine = valuethree[1];
+
+            //get mycityName
+            string mycityName = nextLine;
+
+            //put value into array
+            mg[gridX][gridY].mycityID = mycityID;
+            mg[gridX][gridY].occupy = true;
+            mg[gridX][gridY].mycityName = mycityName;
+        }
+    }
+    return **mg;
+}
