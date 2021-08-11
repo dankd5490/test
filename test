@@ -1,3 +1,124 @@
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <iomanip>
+#include <limits>
+#include <vector>
+
+using namespace std;
+
+struct myMap { //store myintx and myinty int from map file
+    int myintX;
+    int myintY;
+} myMap;
+
+
+struct myGrid { //grid area info, 2d array struct
+    int x, y; 
+    bool occupy;
+    int mycityID;
+    string mycityName;
+    int myCloud, cloudIndex, myPressure, pressureIndex;
+    char cloudLMH, pressureLMH;
+};
+
+myGrid **mg;
+
+//all funct prototypes here
+void userEnter();
+myGrid fileProcess();
+vector<string> tokenizeMethod(string, string);
+myGrid fileRead(string);
+myGrid pressurefileRead(string);
+char getChar(int);
+void mapDisplay(int, int);
+void cloudDisplay(int, int);
+void cloudLMHdisplay(int, int);
+void pressureDisplay(int, int);
+void pressureLMHdisplay(int, int);
+void weatherReport(int, int);
+int printCity(int, int, vector < int > , int);
+double chanceofRain(char, char);
+void printRain(double);
+
+//main class
+int main() {
+    
+    string numOption = "0";
+	//menu keep looping till user input number 8 into program
+    while (numOption != "8") {
+
+        cout << "Welcome to Weather Information Processing System!" << endl;
+        cout << endl;
+        cout << "1) Read in and process a configuration file" << endl;
+        cout << "2) Display city map" << endl;
+        cout << "3) Display cloud coverage map (Cloudiness index)" << endl;
+        cout << "4) Display cloud coverage map (LMH symbols)" << endl;
+        cout << "5) Display atmospheric pressure map (Pressure index)" << endl;
+        cout << "6) Display atmospheric pressure map (LMH symbols)" << endl;
+        cout << "7) Show weather forecast summary report" << endl;
+        cout << "8) Quit" << endl;
+        cout << endl;
+        cout << "Please enter your choice: ";
+        cin >> numOption;
+        cout << endl;
+		
+		//if else statment to check input value from user
+        if (numOption == "1")
+            //processing files
+            **mg = fileProcess();
+			
+        else if (numOption == "2") {
+            //display my map
+            mapDisplay(myMap.myintX, myMap.myintY);
+			
+        } else if (numOption == "3") {
+            //display cloudDisplay
+            cloudDisplay(myMap.myintX, myMap.myintY);
+			
+        } else if (numOption == "4") {
+            //display cloud LMH
+            cloudLMHdisplay(myMap.myintX, myMap.myintY);
+			
+        } else if (numOption == "5") {
+            //display pressureDisplay
+            pressureDisplay(myMap.myintX, myMap.myintY);
+			
+        } else if (numOption == "6") {
+            //display pressure LMH
+            pressureLMHdisplay(myMap.myintX, myMap.myintY);
+			
+        } else if (numOption == "7") {
+            //show weatherReport
+            weatherReport(myMap.myintX, myMap.myintY);
+			
+        } else if (numOption == "8")
+			//thank you message after exiting
+            cout << "Thank you for using the program" << endl;
+		
+        else
+			//if number invalie cout please enter valid number 
+            cout << "Please enter valid number" << endl << endl;
+    }
+
+    //deallocate memory usinng delete
+    for (int k = 0; k < myMap.myintX + 1; k++) { 
+        delete[] mg[k];
+    }
+    delete[] mg;
+
+    return 0;
+}
+
+//userEnter method allows to look at funct display before user presses enter key
+void userEnter() { 
+    cout << "Press Enter to Continue: ";
+    cin.ignore(std::numeric_limits < streamsize > ::max(), '\n');
+    cin.ignore(std::numeric_limits < streamsize > ::max(), '\n');
+}
+
+//start file reading
 myGrid fileProcess() {
     string myfile; 
 
@@ -189,3 +310,430 @@ myGrid fileRead(string myfile) {//reading files
     }
     return **mg;
 }
+
+//process pressure file
+myGrid pressurefileRead(string myfile) {
+    fstream input_file(myfile.c_str(), fstream::in);
+
+    string myLine;
+    string nextLine;
+
+    while (getline(input_file, myLine)) {
+        if (myLine == "")
+            break;
+
+        myLine.erase(0, 1); 
+
+        //get gridX value
+        vector<string> valueone = tokenizeMethod(myLine, ", ");
+
+        int gridX = atoi(valueone.at(0).c_str());
+
+        nextLine = valueone[1];
+
+        //get gridY value
+        vector<string> valuetwo = tokenizeMethod(nextLine, "]");
+
+        int gridY = atoi(valuetwo.at(0).c_str());
+
+        nextLine = valuetwo[1];
+        nextLine = nextLine.erase(0, 1);
+
+        if (nextLine.size() == 2) {
+            //get myPressure value
+            int myPressure = stoi(nextLine);
+
+            //get pressureindex value
+            nextLine = nextLine.substr(0, 1); 
+            int pressureIndex = stoi(nextLine);
+
+            //get pressureLMH
+            char pressureLMH = getChar(myPressure);
+
+            //insert values into array
+            mg[gridX][gridY].myPressure = myPressure;
+            mg[gridX][gridY].pressureIndex = pressureIndex;
+            mg[gridX][gridY].pressureLMH = pressureLMH;
+        } else {
+            //get myPressure value
+            int myPressure = stoi(nextLine);
+			
+			//get pressureindex value
+            int pressureIndex = 0;
+
+            //get pressureLMH
+            char pressureLMH = getChar(myPressure);
+
+            //insert values into array
+            mg[gridX][gridY].myPressure = myPressure;
+            mg[gridX][gridY].pressureIndex = pressureIndex;
+            mg[gridX][gridY].pressureLMH = pressureLMH;
+        }
+    }
+    return **mg;
+}
+
+//get char based on numbers from file
+char getChar(int ifCloudOrPressure) { 
+    if (ifCloudOrPressure < 35)
+        return ('L');
+    else if (ifCloudOrPressure >= 35 && ifCloudOrPressure < 65)
+        return ('M');
+    else
+        return ('H');
+}
+
+//construct city map
+void mapDisplay(int myintX, int myintY) {
+    for (int y = myintY + 1; y >= -2; y--) {
+        for (int x = -2; x <= myintX + 1; x++) {
+            if ((y == myintY + 1 && x >= -1) || //print first row of #
+                (y == -1 && x >= -1) || //print last row of #
+                (x == -1 && y >= -1) || //print first column of #
+                (x == myintX + 1 && y >= -1)) //print last column of #
+                cout << "# ";
+            else if (x == -2 && y >= 0 && y <= myintY) //printing numbers
+                cout << y << " ";
+            else if (y == -2 && x >= 0 && x <= myintX) //printing numbers
+                cout << x << " ";
+            else if (x <= myintX &&
+                x >= 0 &&
+                y <= myintY &&
+                y >= 0 &&
+                mg[x][y].occupy == true)
+                cout << mg[x][y].mycityID << " ";
+            else
+                cout << "  ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+
+    userEnter();
+
+    cout << endl;
+}
+
+//construct cloud map
+void cloudDisplay(int myintX, int myintY) {
+    for (int y = myintY + 1; y >= -2; y--) {
+        for (int x = -2; x <= myintX + 1; x++) {
+            if ((y == myintY + 1 && x >= -1) || //print first row of #
+                (y == -1 && x >= -1) || //print last row of #
+                (x == -1 && y >= -1) || //print first column of #
+                (x == myintX + 1 && y >= -1)) //print last column of #
+                cout << "# ";
+            else if (x == -2 && y >= 0 && y <= myintY)//printing numbers
+                cout << y << " ";
+            else if (y == -2 && x >= 0 && x <= myintX)//printing numbers
+                cout << x << " ";
+            else if (x <= myintX &&
+                x >= 0 &&
+                y <= myintY &&
+                y >= 0)
+                cout << mg[x][y].cloudIndex << " ";
+            else
+                cout << "  ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+
+    userEnter();
+
+    cout << endl;
+}
+
+//construct cloud lmh map
+void cloudLMHdisplay(int myintX, int myintY) {
+    for (int y = myintY + 1; y >= -2; y--) {
+        for (int x = -2; x <= myintX + 1; x++) {
+            if ((y == myintY + 1 && x >= -1) || //print first row of #
+                (y == -1 && x >= -1) || //print last row of #
+                (x == -1 && y >= -1) || //print first column of #
+                (x == myintX + 1 && y >= -1)) //print last column of #
+                cout << "# ";
+            else if (x == -2 && y >= 0 && y <= myintY) //printing numbers
+                cout << y << " ";
+            else if (y == -2 && x >= 0 && x <= myintX) //printing numbers
+                cout << x << " ";
+            else if (x <= myintX &&
+                x >= 0 &&
+                y <= myintY &&
+                y >= 0)
+                cout << mg[x][y].cloudLMH << " ";
+            else
+                cout << "  ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+
+    userEnter();
+
+    cout << endl;
+}
+
+//construct pressure map
+void pressureDisplay(int myintX, int myintY) {
+    for (int y = myintY + 1; y >= -2; y--) {
+        for (int x = -2; x <= myintX + 1; x++) {
+            if ((y == myintY + 1 && x >= -1) || //print first row of #
+                (y == -1 && x >= -1) || //print last row of #
+                (x == -1 && y >= -1) || //print first column of #
+                (x == myintX + 1 && y >= -1)) //print last column of #
+                cout << "# ";
+            else if (x == -2 && y >= 0 && y <= myintY) //printing numbers
+                cout << y << " ";
+            else if (y == -2 && x >= 0 && x <= myintX) //printing numbers
+                cout << x << " ";
+            else if (x <= myintX &&
+                x >= 0 &&
+                y <= myintY &&
+                y >= 0)
+                cout << mg[x][y].pressureIndex << " ";
+            else
+                cout << "  ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+
+    userEnter();
+
+    cout << endl;
+}
+
+//construct pressure lmh map
+void pressureLMHdisplay(int myintX, int myintY) {
+    for (int y = myintY + 1; y >= -2; y--) {
+        for (int x = -2; x <= myintX + 1; x++) {
+            if ((y == myintY + 1 && x >= -1) || //print first row of #
+                (y == -1 && x >= -1) || //print last row of #
+                (x == -1 && y >= -1) || //print first column of #
+                (x == myintX + 1 && y >= -1)) //print last column of #
+                cout << "# ";
+            else if (x == -2 && y >= 0 && y <= myintY)//printing numbers
+                cout << y << " ";
+            else if (y == -2 && x >= 0 && x <= myintX)//printing numbers
+                cout << x << " ";
+            else if (x <= myintX &&
+                x >= 0 &&
+                y <= myintY &&
+                y >= 0)
+                cout << mg[x][y].pressureLMH << " ";
+            else
+                cout << "  ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+
+    userEnter();
+
+    cout << endl;
+}
+
+//making report from number 7
+void weatherReport(int myintX, int myintY) {
+    cout << "Weather Forecast Summary Report" << endl; //report name
+    cout << "-------------------------------" << endl;
+
+    //get unique myID city id
+    vector < int > myID; 
+
+    for (int x = 0; x < myintX + 1; x++) {
+        for (int y = 0; y < myintY + 1; y++) {
+            if (mg[x][y].occupy == true)
+                myID.push_back({
+                    mg[x][y].mycityID
+                });
+        }
+    }
+
+    sort(myID.begin(), myID.end());
+    myID.erase(unique(myID.begin(), myID.end()), myID.end());
+
+    for (unsigned int k = 0; k < myID.size(); k++) { //retriving details based on the city id
+        double cloudArea = 0;
+        double cloudTotal = 0;
+        double cloudAvg = 0;
+
+        double pressureArea = 0;
+        double pressureTotal = 0;
+        double pressureAvg = 0;
+
+        int printforCityText = printCity(myintX, myintY, myID, k); 
+
+        for (int arrayX = 0; arrayX < myintX + 1; arrayX++) {
+            for (int arrayY = 0; arrayY < myintY + 1; arrayY++) {
+                if (mg[arrayX][arrayY].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+
+                //attempts to take values around city, if city top of grid
+                else if (arrayY + 1 <= myintY && mg[arrayX][arrayY + 1].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+                //if city top left of grid
+                else if (arrayY + 1 <= myintY && arrayX - 1 <= myintX && arrayX - 1 >= 0 && mg[arrayX - 1][arrayY + 1].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+                //if city top right of grid
+                else if (arrayY + 1 <= myintY && arrayX + 1 <= myintX && mg[arrayX + 1][arrayY + 1].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+                //if city left of grid
+                else if (arrayX - 1 <= myintX && arrayX - 1 >= 0 && mg[arrayX - 1][arrayY].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+                //if city right of grid
+                else if (arrayX + 1 <= myintX && mg[arrayX + 1][arrayY].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+                //if city bottom of grid
+                else if (arrayY - 1 <= myintY && arrayY - 1 >= 0 && mg[arrayX][arrayY - 1].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+                //if city bottom left of grid
+                else if (arrayY - 1 <= myintY && arrayY - 1 >= 0 && arrayX - 1 <= myintX && arrayX - 1 >= 0 && mg[arrayX - 1][arrayY - 1].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+                //if city bottom right of grid
+                else if (arrayY - 1 <= myintY && arrayY - 1 >= 0 && arrayX + 1 <= myintX && mg[arrayX + 1][arrayY - 1].mycityID == myID[k]) {
+                    cloudArea++;
+                    cloudTotal += mg[arrayX][arrayY].myCloud;
+
+                    pressureArea++;
+                    pressureTotal += mg[arrayX][arrayY].myPressure;
+                }
+            }
+        }
+
+        cloudAvg = cloudTotal / cloudArea; //calc avg of cloud/pressure
+        pressureAvg = pressureTotal / pressureArea;
+
+        cout << "City ID   : " << myID[k] << endl;
+        cout << "Ave. Cloud  Cover (ACC)   : " << fixed << setprecision(2) << cloudAvg <<
+            " (" << getChar((int) cloudAvg) << ")" << endl;
+        cout << "Ave. Pressure     (AP)    : " << fixed << setprecision(2) << pressureAvg <<
+            " (" << getChar((int) pressureAvg) << ")" << endl;
+
+        //get rain chance based on avg
+        double myRainChance = chanceofRain(getChar((int) cloudAvg), getChar((int) pressureAvg));
+
+        cout << "Probability of Rain (%)   : " << fixed << setprecision(2) << myRainChance << endl;
+
+        printRain(myRainChance); //print graphic
+
+        cout << endl;
+    }
+    userEnter();
+
+    cout << endl;
+}
+
+//printCity for report
+int printCity(int myintX, int myintY, vector < int > myID, int k) {
+    for (int arrayX = 0; arrayX < myintX + 1; arrayX++) {
+        for (int arrayY = 0; arrayY < myintY + 1; arrayY++) {
+            if (mg[arrayX][arrayY].mycityID == myID[k]) {
+                cout << "City Name : " << mg[arrayX][arrayY].mycityName << endl;
+
+                return (0);
+            }
+        }
+    }
+    return (0);
+}
+
+//chanceofRain method
+double chanceofRain(char cloudAvg, char pressureAvg) {
+    if (cloudAvg == 'H' && pressureAvg == 'L')
+        return (90);
+    else if (cloudAvg == 'M' && pressureAvg == 'L')
+        return (80);
+    else if (cloudAvg == 'L' && pressureAvg == 'L')
+        return (70);
+    else if (cloudAvg == 'H' && pressureAvg == 'M')
+        return (60);
+    else if (cloudAvg == 'M' && pressureAvg == 'M')
+        return (50);
+    else if (cloudAvg == 'L' && pressureAvg == 'M')
+        return (40);
+    else if (cloudAvg == 'H' && pressureAvg == 'H')
+        return (30);
+    else if (cloudAvg == 'M' && pressureAvg == 'H')
+        return (20);
+    else
+        return (10);
+}
+
+//print rain graphic in the report
+void printRain(double myRainChance) {
+    if (myRainChance == 90) {
+        cout << "~~~~" << endl;
+        cout << "~~~~~" << endl;
+        cout << "\\\\\\\\\\" << endl;
+    } else if (myRainChance == 80) {
+        cout << "~~~~" << endl;
+        cout << "~~~~~" << endl;
+        cout << " \\\\\\\\" << endl;
+    } else if (myRainChance == 70) {
+        cout << "~~~~" << endl;
+        cout << "~~~~~" << endl;
+        cout << "  \\\\\\" << endl;
+    } else if (myRainChance == 60) {
+        cout << "~~~~" << endl;
+        cout << "~~~~~" << endl;
+        cout << "   \\\\" << endl;
+    } else if (myRainChance == 50) {
+        cout << "~~~~" << endl;
+        cout << "~~~~~" << endl;
+        cout << "    \\" << endl;
+    } else if (myRainChance == 40) {
+        cout << "~~~~" << endl;
+        cout << "~~~~~" << endl;
+    } else if (myRainChance == 30) {
+        cout << "~~~" << endl;
+        cout << "~~~~" << endl;
+    } else if (myRainChance == 20) {
+        cout << "~~" << endl;
+        cout << "~~~" << endl;
+    } else {
+        cout << "~" << endl;
+        cout << "~~" << endl;
+    }
+} 
